@@ -3,6 +3,7 @@ from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, \
     QLineEdit, QGraphicsScene, QGraphicsProxyWidget, QGraphicsView, QGraphicsItem
 from PyQt6.QtGui import QPainter, QPen, QImage, QColor, QBrush
+from calculations import calculate_axes_intersections, calculate_limits, transform_values
 
 class Gpaphic(QWidget):
     def __init__(self, width = 600, height = 600):
@@ -14,23 +15,50 @@ class Gpaphic(QWidget):
         self.image = QImage(width, height, QImage.Format.Format_ARGB32)
         self.image.fill(QColor.fromString("#EFF9E8"))
         self.setFixedSize(QSize(width, height))
+        self.draw_grid()
+        self.draw_axes()
 
-    #image background
+    def draw_grid(self):
         imgPainter = QPainter(self.image)
-        pen = QPen(QColor.fromString("#85A898"))
+        pen = QPen(QColor.fromString("#A1BEAF"))
         pen.setWidth(2)
         imgPainter.setPen(pen)
         for i in range(601):
             if i == 0:
                 imgPainter.drawLine(i, 0, i, 600)
-            elif i % 50 == 0:
+            elif i % 25 == 0:
                 imgPainter.drawLine(i, 0, i, 600)
         for i in range(601):
             if i == 0:
                 imgPainter.drawLine(0, i, 600, i)
-            elif i % 50 == 0:
+            elif i % 25 == 0:
                 imgPainter.drawLine(0, i, 600, i)
 
+    def draw_axes(self):
+        imgPainter = QPainter(self.image)
+        # Ox Oy
+        pen = QPen(QColor.fromString("#3A4E40"))
+        pen.setWidth(2)
+        imgPainter.setPen(pen)
+        # --->
+        imgPainter.drawLine(20, 300, 570, 300)
+        imgPainter.drawLine(550, 292, 570, 300)
+        imgPainter.drawLine(550, 308, 570, 300)
+        # ^
+        # |
+        imgPainter.drawLine(300, 20, 300, 570)
+        imgPainter.drawLine(308, 40, 300, 20)
+        imgPainter.drawLine(292, 40, 300, 20)
+
+    def draw_graph(self, points_list):
+        imgPainter = QPainter(self.image)
+        # Ox Oy
+        pen = QPen(QColor.fromString("#3A4E40"))
+        pen.setWidth(2)
+        imgPainter.setPen(pen)
+
+        imgPainter.drawLine(points_list[0], points_list[1])
+        self.update()
 
     def paintEvent(self, a0):
         painter = QPainter(self)
@@ -71,15 +99,30 @@ class GrView(QGraphicsView):
         self.setDragMode(QGraphicsView.DragMode.ScrollHandDrag)
         self.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         self.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
-        self.scale_factor = 1.15
+        self.scale_factor = 1.1
+        self.current_scale = 1
 
     def wheelEvent(self, event):
         if event.angleDelta().y() > 0:
             zoom_in = self.scale_factor
-            self.scale(zoom_in, zoom_in)
+            cscale = self.current_scale
+            cscale = self.current_scale + zoom_in
+            print(cscale)
+            if cscale > 6:
+                pass
+            else:
+                self.scale(zoom_in, zoom_in)
+                self.current_scale = cscale
         else:
             zoom_out = 1/self.scale_factor
-            self.scale(zoom_out, zoom_out)
+            cscale = self.current_scale
+            cscale = self.current_scale - zoom_out
+            print(cscale)
+            if cscale < -6:
+                pass
+            else:
+                self.scale(zoom_out, zoom_out)
+                self.current_scale = cscale
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -373,51 +416,32 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(mainWidget)
 
     def show_problem(self):
-        a = self.aEdit.text()
-        b = self.bEdit.text()
-        c = self.cEdit.text()
+        a_text = self.aEdit.text().strip()
+        b_text = self.bEdit.text().strip()
+        c_text = self.cEdit.text().strip()
 
-        if a == "":
-            a = 0
-        elif a == "-":
-            pass
-        elif a.isalpha():
-            pass
-        else:
-            a = float(self.aEdit.text())
+        def safe_float(value):
+            try:
+                return float(value)
+            except ValueError:
+                return None
 
-        if b == "":
-            b = 0
-        elif b == "-":
-            pass
-        elif b.isalpha():
-            pass
-        else:
-            b = float(self.bEdit.text())
+        a = safe_float(a_text)
+        b = safe_float(b_text)
+        c = safe_float(c_text)
 
-        if c == "":
-            c = 0
-        elif c == "-":
-            pass
-        elif c.isalpha():
-            pass
-        else:
-            c = float(self.cEdit.text())
+        if a is None or b is None or c is None:
+            self.problem.setText("Невірний формат")
+            return
 
-        print(a, b, c)
-
-        if a == "-" or b == "-" or c == "-":
-            pass
-        elif a.isalpha() or b.isalpha() or c.isalpha():
-            pass
-        elif a == 0:
+        if a == 0:
             self.problem.setText(f"{b}y = {c}")
         elif b == 0:
             self.problem.setText(f"{a}x = {c}")
         elif b < 0:
-            self.problem.setText(f"{a}x-{-1 * b}y={c}")
-        elif b > 0:
-            self.problem.setText(f"{a}x+{b}y={c}")
+            self.problem.setText(f"{a}x - {abs(b)}y = {c}")
+        else:
+            self.problem.setText(f"{a}x + {b}y = {c}")
 
     def paint_pressed(self):
         self.gr.a = float(self.aEdit.text())

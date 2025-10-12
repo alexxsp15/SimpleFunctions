@@ -1,8 +1,8 @@
 import sys
-from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtCore import Qt, QSize, QPointF
 from PyQt6.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QPushButton, QHBoxLayout, QVBoxLayout, \
     QLineEdit, QGraphicsScene, QGraphicsProxyWidget, QGraphicsView, QGraphicsItem
-from PyQt6.QtGui import QPainter, QPen, QImage, QColor, QBrush
+from PyQt6.QtGui import QPainter, QPen, QImage, QColor, QBrush, QFont
 from calculations import calculate_axes_intersections, calculate_limits, transform_values
 
 class Gpaphic(QWidget):
@@ -34,6 +34,8 @@ class Gpaphic(QWidget):
             elif i % 25 == 0:
                 imgPainter.drawLine(0, i, 600, i)
 
+        imgPainter.end()
+
     def draw_axes(self):
         imgPainter = QPainter(self.image)
         # Ox Oy
@@ -50,15 +52,77 @@ class Gpaphic(QWidget):
         imgPainter.drawLine(308, 40, 300, 20)
         imgPainter.drawLine(292, 40, 300, 20)
 
-    def draw_graph(self, points_list):
-        imgPainter = QPainter(self.image)
-        # Ox Oy
-        pen = QPen(QColor.fromString("#3A4E40"))
-        pen.setWidth(2)
-        imgPainter.setPen(pen)
+        #numbers OX
+        imgPainter.setFont(QFont("Arial", 6))
+        imgPainter.drawText(QPointF(35, 310), "-10")
+        imgPainter.drawText(QPointF(65, 310), "-9")
+        imgPainter.drawText(QPointF(90, 310), "-8")
+        imgPainter.drawText(QPointF(115, 310), "-7")
+        imgPainter.drawText(QPointF(140, 310), "-6")
+        imgPainter.drawText(QPointF(165, 310), "-5")
+        imgPainter.drawText(QPointF(190, 310), "-4")
+        imgPainter.drawText(QPointF(215, 310), "-3")
+        imgPainter.drawText(QPointF(240, 310), "-2")
+        imgPainter.drawText(QPointF(265, 310), "-1")
+        imgPainter.drawText(QPointF(292, 310), "0")
+        imgPainter.drawText(QPointF(317, 310), "1")
+        imgPainter.drawText(QPointF(342, 310), "2")
+        imgPainter.drawText(QPointF(367, 310), "3")
+        imgPainter.drawText(QPointF(392, 310), "4")
+        imgPainter.drawText(QPointF(416, 310), "5")
+        imgPainter.drawText(QPointF(442, 310), "6")
+        imgPainter.drawText(QPointF(467, 310), "7")
+        imgPainter.drawText(QPointF(492, 310), "8")
+        imgPainter.drawText(QPointF(517, 310), "9")
+        imgPainter.drawText(QPointF(540, 310), "10")
 
-        imgPainter.drawLine(points_list[0], points_list[1])
-        self.update()
+        #numbers OY
+        imgPainter.drawText(QPointF(287, 60), "10")
+        imgPainter.drawText(QPointF(292, 83), "9")
+        imgPainter.drawText(QPointF(292, 108), "8")
+        imgPainter.drawText(QPointF(292, 134), "7")
+        imgPainter.drawText(QPointF(292, 158), "6")
+        imgPainter.drawText(QPointF(292, 184), "5")
+        imgPainter.drawText(QPointF(292, 210), "4")
+        imgPainter.drawText(QPointF(292, 234), "3")
+        imgPainter.drawText(QPointF(292, 260), "2")
+        imgPainter.drawText(QPointF(292, 283), "1")
+        imgPainter.drawText(QPointF(290, 334), "-1")
+        imgPainter.drawText(QPointF(290, 360), "-2")
+        imgPainter.drawText(QPointF(290, 384), "-3")
+        imgPainter.drawText(QPointF(290, 408), "-4")
+        imgPainter.drawText(QPointF(290, 433), "-5")
+        imgPainter.drawText(QPointF(290, 458), "-6")
+        imgPainter.drawText(QPointF(290, 484), "-7")
+        imgPainter.drawText(QPointF(290, 509), "-8")
+        imgPainter.drawText(QPointF(290, 533), "-9")
+        imgPainter.drawText(QPointF(285, 557), "-10")
+
+        imgPainter.setFont(QFont("Arial", 15))
+        imgPainter.drawText(QPointF(310, 30), "OX")
+        imgPainter.drawText(QPointF(550, 290), "OY")
+
+        imgPainter.end()
+
+    def draw_graph(self, points_list):
+        self.image.fill(QColor.fromString("#EFF9E8"))
+        self.draw_grid()
+        self.draw_axes()
+
+        print(f"We have {points_list}")
+        x1, y1 = map(int, points_list[0])
+        x2, y2 = map(int, points_list[1])
+
+        print(x1, y1)
+        print(x2, y2)
+
+        paint = QPainter(self.image)
+        pen = QPen(QColor.fromString("#3A4E40"))
+        pen.setWidth(3)
+        paint.setPen(pen)
+
+        paint.drawLine(x1, y1, x2, y2)
+        paint.end()
 
     def paintEvent(self, a0):
         painter = QPainter(self)
@@ -84,7 +148,7 @@ class MovableProxy(QGraphicsProxyWidget):
             self.setPos(new_pos)
             self.scene().update()
         else:
-            self.mouseMoveEvent(event)
+            super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.RightButton:
@@ -416,37 +480,111 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(mainWidget)
 
     def show_problem(self):
-        a_text = self.aEdit.text().strip()
-        b_text = self.bEdit.text().strip()
-        c_text = self.cEdit.text().strip()
+        for line in [self.aEdit, self.bEdit, self.cEdit]:
+            txt = line.text().strip()
 
-        def safe_float(value):
-            try:
-                return float(value)
-            except ValueError:
-                return None
+            if txt == "":
+                value = 0.0
+                line.setStyleSheet("""
+                QLineEdit {
+                background-color: #F5E2B0;
+                border: 3px solid #E2C983;
+                font-size: 12px;
+                font-weight: bold;
+                color: #A7874B;
+                border-radius: 5px;
+                }
+                QLineEdit:focus {
+                color: #A7874B;
+                border: 3px solid #A7874B;
+                }
+                """)
+            else:
+                try:
+                    value = float(txt)
+                    line.setStyleSheet("""
+                QLineEdit {
+                background-color: #F5E2B0;
+                border: 3px solid #E2C983;
+                font-size: 12px;
+                font-weight: bold;
+                color: #A7874B;
+                border-radius: 5px;
+                }
+                QLineEdit:focus {
+                color: #A7874B;
+                border: 3px solid #A7874B;
+                }
+                """)
+                except ValueError:
+                    line.setStyleSheet("""
+                QLineEdit {
+                background-color: #F5E2B0;
+                border: 3px solid red;
+                font-size: 12px;
+                font-weight: bold;
+                color: #A7874B;
+                border-radius: 5px;
+                }
+                QLineEdit:focus {
+                color: #A7874B;
+                border: 3px solid red;
+                }
+                """)
+                    return
 
-        a = safe_float(a_text)
-        b = safe_float(b_text)
-        c = safe_float(c_text)
+        a = float(self.aEdit.text() or 0)
+        b = float(self.bEdit.text() or 0)
+        c = float(self.cEdit.text() or 0)
 
-        if a is None or b is None or c is None:
-            self.problem.setText("Невірний формат")
-            return
-
-        if a == 0:
-            self.problem.setText(f"{b}y = {c}")
-        elif b == 0:
-            self.problem.setText(f"{a}x = {c}")
-        elif b < 0:
-            self.problem.setText(f"{a}x - {abs(b)}y = {c}")
-        else:
+        if a != 0 and b > 0:
             self.problem.setText(f"{a}x + {b}y = {c}")
+        elif a != 0 and b < 0:
+            self.problem.setText(f"{a}x - {-1 * b}y = {c}")
+        elif a != 0 and b == 0:
+            self.problem.setText(f"{a}x = {c}")
+        elif a == 0:
+            self.problem.setText(f"{b}y = {c}")
+
+        self.gr.a = a
+        self.gr.b = b
+        self.gr.c = c
+
+    def show_intersections(self, points):
+        x_intersection = None
+        y_intersection = None
+
+        for x, y in points:
+            if abs(x) < 1e-6:
+                y_intersection = (x, y)
+            elif abs(y) < 1e-6:
+                x_intersection = (x, y)
+
+        if x_intersection:
+            self.x_resLabel.setText(f"({x_intersection[0]:.2f}; {x_intersection[1]:.2f})")
+        else:
+            self.x_resLabel.setText("No intersection with X-axis")
+
+        if y_intersection:
+            self.y_resLabel.setText(f"({y_intersection[0]:.2f}; {y_intersection[1]:.2f})")
+        else:
+            self.y_resLabel.setText("No intersection with Y-axis")
 
     def paint_pressed(self):
-        self.gr.a = float(self.aEdit.text())
-        self.gr.b = float(self.bEdit.text())
-        self.gr.c = float(self.cEdit.text())
+        print(self.gr.a, self.gr.b, self.gr.c)
+        first_points_list = calculate_axes_intersections(self.gr.a, self.gr.b, self.gr.c)
+        second_points_list = calculate_limits(self.gr.a, self.gr.b, self.gr.c)
+        final_points_list = transform_values(second_points_list)
+        print(first_points_list)
+        print(second_points_list)
+        print(final_points_list)
+        self.gr.draw_graph(final_points_list)
+        self.view.viewport().update()
+        self.scene.update()
+        self.view.viewport().repaint()
+
+        self.show_intersections(first_points_list)
+
 
 app = QApplication(sys.argv)
 window = MainWindow()
